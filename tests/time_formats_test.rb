@@ -20,7 +20,9 @@ class TimeFormatsTest < Minitest::Test
     result = QuickLauncherTimeFormats.response({ 'version' => 1 }, now: @now)
     assert_equal 1, result[:version]
     assert_equal 'list', result[:action]
-    assert_equal ['06:13:20', '06:13', '06:13:20 AM', '2023-11-15T06:13:20+08:00', '1700000000'], result[:items].map { |item| item[:text] }
+    assert_equal ['06:13:20', '06:13', '06:13:20 AM', '2023-11-15T06:13:20+08:00', '1700000000',
+                  '2023-11-15 06:13:20', '2023年11月15日 06时13分20秒', '20231115061320'],
+                 result[:items].map { |item| item[:text] }
     assert_equal result[:items].map { |item| item[:text] }, result[:items].map { |item| item[:title] }
     assert result[:items].all? { |item| !item[:subtitle].empty? }
   end
@@ -31,6 +33,17 @@ class TimeFormatsTest < Minitest::Test
     assert_equal '22:13:20', values[0]
     assert_equal '2023-11-14T22:13:20+00:00', values[3]
     assert_equal '1700000000', values[4]
+    assert_equal ['2023-11-14 22:13:20', '2023年11月14日 22时13分20秒', '20231114221320'], values[5, 3]
+  end
+
+  def test_full_date_time_formats_respect_leap_day_and_local_date_boundary
+    instant = Time.utc(2024, 2, 29, 16, 5, 6)
+    values = QuickLauncherTimeFormats.response({ 'version' => 1 }, now: instant)[:items].map { |item| item[:text] }
+    assert_equal ['2024-03-01 00:05:06', '2024年03月01日 00时05分06秒', '20240301000506'], values[5, 3]
+
+    ENV['TZ'] = 'UTC'
+    values = QuickLauncherTimeFormats.response({ 'version' => 1 }, now: instant)[:items].map { |item| item[:text] }
+    assert_equal ['2024-02-29 16:05:06', '2024年02月29日 16时05分06秒', '20240229160506'], values[5, 3]
   end
 
   def test_rejects_unsupported_request
@@ -46,7 +59,7 @@ class TimeFormatsTest < Minitest::Test
     result = JSON.parse(out)
     assert_equal 1, result.fetch('version')
     assert_equal 'list', result.fetch('action')
-    assert_equal 5, result.fetch('items').size
+    assert_equal 8, result.fetch('items').size
     result.fetch('items').each do |item|
       %w[title subtitle text].each do |field|
         value = item.fetch(field)
