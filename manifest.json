@@ -1,0 +1,11 @@
+{
+  "id": "com.quicklauncher.time-formats",
+  "name": "时间格式",
+  "description": "显示并复制多种常用的本地时间格式",
+  "keyword": "time",
+  "version": "1.0.0",
+  "author": "QuickLauncher",
+  "runtime": "ruby",
+  "entry": "main.rb",
+  "previewOnKeyword": true
+}
