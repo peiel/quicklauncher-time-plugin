@@ -36,6 +36,20 @@ class TimeFormatsTest < Minitest::Test
     assert_equal ['2023-11-14 22:13:20', '2023年11月14日 22时13分20秒', '20231114221320'], values[5, 3]
   end
 
+  def test_format_ids_are_unique_and_stable_across_instants_and_time_zones
+    expected = %w[time_24h_seconds time_24h_minutes time_12h_seconds iso8601_offset
+                  unix_seconds datetime_hyphen datetime_chinese datetime_compact]
+    first = QuickLauncherTimeFormats.response({ 'version' => 1 }, now: @now)[:items]
+    assert_equal expected, first.map { |item| item[:id] }
+    assert_equal expected.size, expected.uniq.size
+    assert expected.all? { |id| id.match?(/\A[A-Za-z0-9][A-Za-z0-9._-]{0,63}\z/) }
+
+    ENV['TZ'] = 'UTC'
+    second = QuickLauncherTimeFormats.response({ 'version' => 1 }, now: @now + 86_401)[:items]
+    assert_equal expected, second.map { |item| item[:id] }
+    refute_equal first.map { |item| item[:text] }, second.map { |item| item[:text] }
+  end
+
   def test_full_date_time_formats_respect_leap_day_and_local_date_boundary
     instant = Time.utc(2024, 2, 29, 16, 5, 6)
     values = QuickLauncherTimeFormats.response({ 'version' => 1 }, now: instant)[:items].map { |item| item[:text] }
@@ -60,7 +74,9 @@ class TimeFormatsTest < Minitest::Test
     assert_equal 1, result.fetch('version')
     assert_equal 'list', result.fetch('action')
     assert_equal 8, result.fetch('items').size
+    assert_equal 8, result.fetch('items').map { |item| item.fetch('id') }.uniq.size
     result.fetch('items').each do |item|
+      assert_match(/\A[A-Za-z0-9][A-Za-z0-9._-]{0,63}\z/, item.fetch('id'))
       %w[title subtitle text].each do |field|
         value = item.fetch(field)
         refute value.strip.empty?

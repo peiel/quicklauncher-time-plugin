@@ -3,7 +3,7 @@
   "name": "时间格式",
   "description": "显示并复制多种常用的本地时间格式",
   "keyword": "time",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "author": "QuickLauncher",
   "runtime": "ruby",
   "entry": "main.rb",
